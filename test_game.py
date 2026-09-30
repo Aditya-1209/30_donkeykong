@@ -1,6 +1,7 @@
 import os
 import random
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
@@ -86,6 +87,45 @@ class BonusEffectTests(unittest.TestCase):
         game.on_barrel_jumped(player, game.Barrel())
         player.reset()
         self.assertEqual(player.bonus_labels, [])
+
+
+class MultiplierTests(unittest.TestCase):
+    def test_multiplier_threshold(self):
+        for score, expected in [(0, 1), (400, 1), (499, 1), (500, 2), (700, 2), (100000, 2)]:
+            with self.subTest(score=score):
+                self.assertEqual(game.score_multiplier(score), expected)
+
+    def test_main_loop_awards_each_barrel_once_and_labels_actual_bonus(self):
+        player = game.Player()
+        player.pos.update(100, 540)
+        player.on_ground = False
+        created = []
+        barrel_type = game.Barrel
+
+        def spawn():
+            barrel = barrel_type()
+            barrel.pos.update(100, 550)
+            created.append(barrel)
+            return barrel
+
+        events = [[] for _ in range(26)] + [[game.pygame.event.Event(game.pygame.QUIT)]]
+        with patch("game.Player", return_value=player), \
+             patch.object(player, "update"), \
+             patch.object(barrel_type, "update"), \
+             patch("game.Barrel", side_effect=spawn), \
+             patch("game.random.uniform", return_value=0), \
+             patch("game.pygame.time.Clock", return_value=SimpleNamespace(tick=lambda fps: 50)), \
+             patch("game.pygame.event.get", side_effect=events), \
+             patch("game.draw_scene", wraps=game.draw_scene) as draw:
+            game.main()
+        scores = [call.args[4] for call in draw.call_args_list]
+        gains = [b - a for a, b in zip([0] + scores, scores) if b != a]
+        self.assertGreater(len(gains), 5)
+        self.assertEqual(gains[:5], [100] * 5)
+        self.assertEqual(gains[5:], [200] * (len(gains) - 5))
+        self.assertEqual(len(gains), len(created))
+        self.assertTrue(all(barrel.scored for barrel in created))
+        self.assertEqual([label.points for label in player.bonus_labels], gains)
 
 
 if __name__ == "__main__":

@@ -27,7 +27,7 @@ It has **one deliberate bug** and **three optional features** left as empty func
 2. Install dependencies:
 
 ```bash
-pip install pygame
+python -m pip install -r requirements.txt
 ```
 
 3. Run the game:
@@ -87,6 +87,15 @@ donkey_kong/
 - **Task 1:** Each barrel has a 30% chance to take a ladder, with one decision per ladder encounter.
 - **Task 2:** The background gradually warms from navy to plum between 0 and 1,000 points, then stays at its warmest color.
 - **Task 3:** A gold label shows the actual jump bonus above the barrel, floats upward, and fades out over one second. Resetting or losing a life clears the labels.
+- **Task 4:** Jump bonuses are 100 points below 500 total points and 200 points from 500 onward. The score before the jump determines the multiplier, so the jump from 400 to 500 still awards 100. The HUD shows the multiplier for the next jump. The princess bonus remains 1,000 points.
+
+### Verify the changes
+
+```bash
+python -m unittest -v
+```
+
+The tests use a headless Pygame display and cover ladder probability and retry behavior, background color limits, floating label lifetime/reset, and scoring across the multiplier threshold.
 
 ## Submission Checklist
 

@@ -39,8 +39,8 @@ def on_barrel_jumped(player, barrel):
 
 
 def score_multiplier(score):
-    """Return a multiplier applied to points earned from clearing a barrel, or None for the default 1x."""
-    pass
+    """Double jump bonuses when the score before the jump is at least 500."""
+    return 2 if score >= 500 else 1
 
 
 class BonusLabel:
@@ -217,7 +217,10 @@ def draw_scene(screen, font, player, barrels, score, lives, state):
     body = pygame.Rect(0, 0, PLAYER_W, PLAYER_H)
     body.midbottom = (player.pos.x, player.pos.y)
     pygame.draw.rect(screen, (50, 180, 240), body)
-    hud = font.render(f"Score {score}   Lives {lives}   R = reset", True, (240, 240, 240))
+    hud = font.render(
+        f"Score {score}   Lives {lives}   Bonus x{score_multiplier(score)}   R = reset",
+        True, (240, 240, 240),
+    )
     screen.blit(hud, (10, 8))
     for label in player.bonus_labels:
         label.draw(screen, font)
