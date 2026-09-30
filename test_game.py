@@ -59,5 +59,34 @@ class ThemeTests(unittest.TestCase):
         self.assertNotEqual(game.theme_color(100), game.BG)
 
 
+class BonusEffectTests(unittest.TestCase):
+    def test_hook_uses_awarded_points_and_copies_barrel_position(self):
+        player, barrel = game.Player(), game.Barrel()
+        barrel.bonus_points = 200
+        game.on_barrel_jumped(player, barrel)
+        self.assertEqual(len(player.bonus_labels), 1)
+        label = player.bonus_labels[0]
+        self.assertEqual(label.points, 200)
+        original = label.pos.copy()
+        barrel.pos.x += 100
+        self.assertEqual(label.pos, original)
+
+    def test_effect_floats_and_expires_after_one_second(self):
+        player, barrel = game.Player(), game.Barrel()
+        game.on_barrel_jumped(player, barrel)
+        original_y = player.bonus_labels[0].pos.y
+        player.update_effects(0.5)
+        self.assertLess(player.bonus_labels[0].pos.y, original_y)
+        self.assertAlmostEqual(player.bonus_labels[0].remaining, 0.5)
+        player.update_effects(0.5)
+        self.assertEqual(player.bonus_labels, [])
+
+    def test_reset_clears_effects(self):
+        player = game.Player()
+        game.on_barrel_jumped(player, game.Barrel())
+        player.reset()
+        self.assertEqual(player.bonus_labels, [])
+
+
 if __name__ == "__main__":
     unittest.main()

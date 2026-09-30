@@ -34,13 +34,33 @@ def theme_color(score):
 
 
 def on_barrel_jumped(player, barrel):
-    """Called when the player clears a barrel; add a bonus effect here."""
-    pass
+    """Show the awarded points above the barrel for a short time."""
+    player.bonus_labels.append(BonusLabel(barrel.pos, barrel.bonus_points))
 
 
 def score_multiplier(score):
     """Return a multiplier applied to points earned from clearing a barrel, or None for the default 1x."""
     pass
+
+
+class BonusLabel:
+    DURATION = 1.0
+
+    def __init__(self, pos, points):
+        self.pos = pygame.Vector2(pos) + (0, -BARREL_R - 6)
+        self.points = points
+        self.remaining = self.DURATION
+
+    def update(self, dt):
+        self.remaining = max(0, self.remaining - dt)
+        self.pos.y -= 35 * dt
+
+    def draw(self, screen, font):
+        label = font.render(f"+{self.points}", True, (255, 235, 110))
+        label.set_alpha(round(255 * self.remaining / self.DURATION))
+        rect = label.get_rect(midbottom=(round(self.pos.x), round(self.pos.y)))
+        rect.clamp_ip(screen.get_rect())
+        screen.blit(label, rect)
 
 
 class Player:
@@ -52,6 +72,13 @@ class Player:
         self.vel = pygame.Vector2()
         self.on_ground = True
         self.ladder = None
+
+        self.bonus_labels = []
+
+    def update_effects(self, dt):
+        for label in self.bonus_labels:
+            label.update(dt)
+        self.bonus_labels[:] = [label for label in self.bonus_labels if label.remaining > 0]
 
     def center(self):
         return pygame.Vector2(self.pos.x, self.pos.y - PLAYER_H / 2)
@@ -130,6 +157,7 @@ class Barrel:
         self.ladder = None
         self.vy = 0
         self.scored = False
+        self.bonus_points = 100
         self.skip = set()
         self.pos = pygame.Vector2(KONG_POS[0] + 40, PLATFORMS[4][2] - BARREL_R)
 
@@ -191,6 +219,8 @@ def draw_scene(screen, font, player, barrels, score, lives, state):
     pygame.draw.rect(screen, (50, 180, 240), body)
     hud = font.render(f"Score {score}   Lives {lives}   R = reset", True, (240, 240, 240))
     screen.blit(hud, (10, 8))
+    for label in player.bonus_labels:
+        label.draw(screen, font)
     if state != "play":
         text = "YOU WIN! Press R" if state == "win" else "GAME OVER - Press R"
         label = font.render(text, True, (255, 255, 120))
@@ -217,6 +247,7 @@ def main():
                 player.reset()
                 barrels.clear()
                 score, lives, state = 0, 3, "play"
+        player.update_effects(dt)
         if state == "play":
             player.update(dt, pygame.key.get_pressed())
             spawn_timer -= dt
@@ -235,7 +266,8 @@ def main():
                 above = 0 < barrel.pos.y - player.pos.y + BARREL_R < 40
                 if not player.on_ground and above and abs(barrel.pos.x - player.pos.x) < 12 and not barrel.scored:
                     barrel.scored = True
-                    score += int(100 * (score_multiplier(score) or 1))
+                    barrel.bonus_points = int(100 * (score_multiplier(score) or 1))
+                    score += barrel.bonus_points
                     on_barrel_jumped(player, barrel)
             barrels[:] = [b for b in barrels if b.pos.y < HEIGHT + 30]
             if player.center().distance_to(pygame.Vector2(PRINCESS_POS)) < 24:

@@ -86,6 +86,7 @@ donkey_kong/
 
 - **Task 1:** Each barrel has a 30% chance to take a ladder, with one decision per ladder encounter.
 - **Task 2:** The background gradually warms from navy to plum between 0 and 1,000 points, then stays at its warmest color.
+- **Task 3:** A gold label shows the actual jump bonus above the barrel, floats upward, and fades out over one second. Resetting or losing a life clears the labels.
 
 ## Submission Checklist
 
