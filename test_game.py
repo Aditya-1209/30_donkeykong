@@ -41,5 +41,23 @@ class BarrelDescentTests(unittest.TestCase):
         self.assertTrue(2800 <= descended <= 3200, descended)
 
 
+class ThemeTests(unittest.TestCase):
+    def test_theme_starts_at_default_and_clamps(self):
+        self.assertEqual(game.theme_color(0), game.BG)
+        self.assertEqual(game.theme_color(-100), game.BG)
+        self.assertEqual(game.theme_color(1000), (65, 25, 40))
+        self.assertEqual(game.theme_color(100000), game.theme_color(1000))
+
+    def test_theme_warms_gradually_with_valid_rgb_channels(self):
+        previous = game.theme_color(0)
+        for score in range(0, 1100, 100):
+            color = game.theme_color(score)
+            self.assertEqual(len(color), 3)
+            self.assertTrue(all(isinstance(channel, int) and 0 <= channel <= 255 for channel in color))
+            self.assertGreaterEqual(color[0], previous[0])
+            previous = color
+        self.assertNotEqual(game.theme_color(100), game.BG)
+
+
 if __name__ == "__main__":
     unittest.main()
